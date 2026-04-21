@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
@@ -7,6 +8,9 @@ public class PlayerController : MonoBehaviour
     private GameObject focalPoint;
 
     public bool hasPowerup;
+    private float powerupStrength = 15.0f;
+
+    public GameObject powerupIndictor;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -21,18 +25,39 @@ public class PlayerController : MonoBehaviour
         float forwardInput = Input.GetAxis("Vertical");
 
         playerRb.AddForce(focalPoint.transform.forward * forwardInput * speed);
+
+        powerupIndictor.transform.forward = transform.position + new Vector3(0, -0.5f, 0);
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Powerup"))
+        {
             hasPowerup = true;
-        Destroy(other.gameObject);
+            Destroy(other.gameObject);
+            StartCoroutine(PowerupCoundownRoutine());
+
+            powerupIndictor.gameObject.SetActive(true);
+        }
     }
 
-    private void OnCollisonEnter(Collision collision)
+    IEnumerator PowerupCoundownRoutine()
+    {
+        yield return new WaitForSeconds(7);
+        hasPowerup = false;
+        powerupIndictor.gameObject.SetActive(false);
+    }
+
+    private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Enemy") && hasPowerup)
-            Debug.Log("Collided with " + collision.gameObject.name + " with powerup set to " + hasPowerup);
+        {
+            Rigidbody enemyRigidbody = collision.gameObject.GetComponent<Rigidbody>();
+            Vector3 awayFromPlayer = (collision.gameObject.transform.position - transform.position);
+
+            Debug.Log("PLayer collided wirth " + collision.gameObject.name + "with powerup set to " + hasPowerup);
+            enemyRigidbody.AddForce(awayFromPlayer * powerupStrength, ForceMode.Impulse);
+        }
+
     }
 }
